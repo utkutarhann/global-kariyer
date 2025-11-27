@@ -41,13 +41,24 @@ Sadece JSON döndür, başka açıklama yapma.`
       })
     });
 
-    const data = await response.json();
-    let jsonText = data.content[0].text;
-    jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const result = JSON.parse(jsonText);
+  if (!response.ok) {
+  const errorText = await response.text();
+  throw new Error(`Claude API error: ${response.status} - ${errorText}`);
+}
 
-    return new Response(JSON.stringify(result), { status: 200, headers });
-  } catch (error) {
+const data = await response.json();
+
+if (!data.content || !data.content[0] || !data.content[0].text) {
+  throw new Error('Invalid response from Claude API');
+}
+
+let jsonText = data.content[0].text;
+jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+const result = JSON.parse(jsonText);
+
+return new Response(JSON.stringify(result), { status: 200, headers });
+} catch (error) {
+  console.error('Full error:', error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers });
   }
 };
